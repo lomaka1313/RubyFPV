@@ -198,7 +198,7 @@ vehicle: ruby_start ruby_utils ruby_tx_telemetry ruby_rt_vehicle
 ifeq ($(RUBY_BUILD_ENV),radxa)
 station: ruby_start ruby_utils ruby_controller ruby_rt_station ruby_tx_rc ruby_rx_telemetry ruby_player_radxa
 else
-station: ruby_start ruby_utils ruby_controller ruby_rt_station ruby_tx_rc ruby_rx_telemetry ruby_player
+station: ruby_start ruby_utils ruby_controller ruby_rt_station ruby_tx_rc ruby_rx_telemetry
 endif
 
 ruby_central: $(FOLDER_CENTRAL)/ruby_central.o $(MODULE_BASE) $(MODULE_MODELS) $(MODULE_COMMON) $(MODULE_BASE2) $(CENTRAL_MENU_ITEMS_ALL) $(CENTRAL_MENU_ALL1) $(CENTRAL_RENDER_CODE) $(CENTRAL_MENU_ALL2) $(CENTRAL_MENU_ALL3) $(CENTRAL_MENU_ALL4) $(CENTRAL_MENU_ALL5) $(CENTRAL_MENU_ALL6) $(CENTRAL_MENU_RC)  $(CENTRAL_MENU_RADIO) $(CENTRAL_POPUP_ALL) $(CENTRAL_RENDER_ALL) $(CENTRAL_OSD_ALL) $(CENTRAL_ALL) $(CENTRAL_RADIO) $(FOLDER_BASE)/shared_mem_controller_only.o $(FOLDER_BASE)/hdmi.o $(FOLDER_COMMON)/favorites.o $(FOLDER_BASE)/plugins_settings.o \
