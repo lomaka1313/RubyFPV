@@ -7,6 +7,8 @@
 #include <sys/ioctl.h>
 #include <sys/mman.h>
 #include <unistd.h>
+#include <opencv2/core/core.hpp>
+#include <opencv2/highgui/highgui.hpp>
 
 uint8_t *buffer;
  
@@ -176,8 +178,14 @@ int capture_image(int fd)
         perror("Retrieving Frame");
         return 1;
     }
-
     printf ("saving image\n");
+    
+    IplImage* frame;
+    CvMat cvmat = cvMat(480, 640, CV_8UC3, (void*)buffer);
+    frame = cvDecodeImage(&cvmat, 1);
+    cvWaitKey(0);
+    cvSaveImage("image.jpg", frame, 0);
+ 
     return 0;
 }
  
@@ -202,7 +210,6 @@ int main()
             if(capture_image(fd))
                 return 1;
         }
-
         close(fd);
         return 0;
 }

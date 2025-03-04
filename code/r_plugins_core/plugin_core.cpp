@@ -1,204 +1,166 @@
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
-
+#include <linux/ioctl.h>
+#include <linux/types.h>
+#include <linux/v4l2-common.h>
+#include <linux/v4l2-controls.h>
+#include <linux/videodev2.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <errno.h>
-#include <sys/mman.h>
 #include <sys/ioctl.h>
-#include <linux/videodev2.h>
+#include <sys/mman.h>
+#include <string.h>
+#include <fstream>
+#include <string>
 
-#define NBUF 10
+using namespace std;
 
-void query_capabilites(int fd)
-{
-	struct v4l2_capability cap;
-
-	if (-1 == ioctl(fd, VIDIOC_QUERYCAP, &cap)) {
-		perror("Query capabilites");
-		exit(EXIT_FAILURE);
-	}
-
-	if (!(cap.capabilities & V4L2_CAP_VIDEO_CAPTURE)) {
-		fprintf(stderr, "Device is no video capture device\\n");
-		exit(EXIT_FAILURE);
-	}
-
-	// if (!(cap.capabilities & V4L2_CAP_READWRITE)) {
-	// 	fprintf(stderr, "Device does not support read i/o\\n");
-	// }
-
-	if (!(cap.capabilities & V4L2_CAP_STREAMING)) {
-		fprintf(stderr, "Devices does not support streaming i/o\\n");
-		exit(EXIT_FAILURE);
-	}
-}
-
-int set_format(int fd)
-{
-	struct v4l2_format format = {0};
-	format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	format.fmt.pix.width = 640;
-	format.fmt.pix.height = 480;
-	format.fmt.pix.pixelformat = V4L2_PIX_FMT_MJPEG;
-	format.fmt.pix.field = V4L2_FIELD_NONE;
-
-	int res = ioctl(fd, VIDIOC_S_FMT, &format);
-	if(res == -1) {
-		perror("Could not set format");
-		exit(EXIT_FAILURE);
-	}
-
-	return res;
-}
-
-int request_buffer(int fd, int count)
-{
-	struct v4l2_requestbuffers req = {0};
-	req.count = count;
-	req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	req.memory = V4L2_MEMORY_MMAP;
-
-	if (ioctl(fd, VIDIOC_REQBUFS, &req) == -1) {
-		perror("Requesting Buffer");
-		exit(EXIT_FAILURE);
-	}
-
-	return req.count;
-}
-
-int query_buffer(int fd, int index, unsigned char **buffer)
-{
-	struct v4l2_buffer buf = {0};
-	buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	buf.memory = V4L2_MEMORY_MMAP;
-	buf.index = index;
-
-	if(ioctl(fd, VIDIOC_QUERYBUF, &buf) == -1) {
-		perror("Could not query buffer");
-		exit(EXIT_FAILURE);
-	}
-
-	*buffer = (u_int8_t*)mmap (NULL, buf.length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, buf.m.offset);
-	return buf.length;
-}
-
-int queue_buffer(int fd, int index)
-{
-	struct v4l2_buffer bufd = {0};
-	bufd.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	bufd.memory = V4L2_MEMORY_MMAP;
-	bufd.index = index;
-
-	if (ioctl(fd, VIDIOC_QBUF, &bufd) == -1) {
-		perror("Queue Buffer");
-		exit(EXIT_FAILURE);
-	}
-
-	return bufd.bytesused;
-}
-
-int start_streaming(int fd)
-{
-	unsigned int type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	if(ioctl(fd, VIDIOC_STREAMON, &type) == -1) {
-		perror("VIDIOC_STREAMON");
-		exit(EXIT_FAILURE);
-	}
-
-	return 0;
-}
-
-int dequeue_buffer(int fd)
-{
-	struct v4l2_buffer bufd = {0};
-	bufd.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	bufd.memory = V4L2_MEMORY_MMAP;
-	bufd.index = 0;
-
-	if (ioctl(fd, VIDIOC_DQBUF, &bufd) == -1) {
-		perror("DeQueue Buffer");
-		exit(EXIT_FAILURE);
-	}
-
-	return bufd.index;
-}
+int main() {
+    // 1.  Open the device
+    int fd; // A file descriptor to the video device
+    fd = open("/dev/video0",O_RDWR);
+    if(fd < 0){
+        perror("Failed to open device, OPEN");
+        return 1;
+    }
 
 
-int stop_streaming(int fd)
-{
-	unsigned int type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	if(ioctl(fd, VIDIOC_STREAMOFF, &type) == -1) {
-		perror("VIDIOC_STREAMON");
-		exit(EXIT_FAILURE);
-	}
-
-	return 0;
-}
-
-int main()
-{
-	unsigned char *buffer[NBUF];
-	int fd = open("/dev/video0", O_RDWR);
-	int size;
-	int index;
-	int nbufs;
-
-	/* Step 1: Query capabilities */
-	query_capabilites(fd);
-
-	/* Step 2: Set format */
-	set_format(fd);
-
-	/* Step 3: Request Format */
-	nbufs = request_buffer(fd, NBUF);
-	if ( nbufs > NBUF) {
-		fprintf(stderr, "Increase NBUF to at least %i\n", nbufs);
-		exit(EXIT_FAILURE);
-	}
-
-	for (int i = 0; i < NBUF; i++) {
-		/* Step 4: Query buffers 
-		 * Assume all sizes is equal.
-		 * */
-		size = query_buffer(fd, i, &buffer[i]);
-
-		/* Step 5: Queue buffer */
-		queue_buffer(fd, i);
-        printf("Buffer %i, size %i\n", i, size);
-	}
-
-	/* Step 6: Start streaming */
-	start_streaming(fd);
-
-	fd_set fds;
-	FD_ZERO(&fds);
-	FD_SET(fd, &fds);
-	struct timeval tv = {0};
-	tv.tv_sec = 2;
-    tv.tv_usec = 0;
-	int r = select(fd+1, &fds, NULL, NULL, &tv);
-	if(-1 == r){
-		perror("Waiting for Frame");
-		exit(1);
-	}
-
-	/* Step 7: Dequeue buffer */
-	index = dequeue_buffer(fd);
-
-	int file = open("output.mjpg", O_RDWR | O_CREAT, 0666);
-	write(file, buffer[index], size);
-
-	/* Step 8: Stop streaming */
-	stop_streaming(fd);
+    // 2. Ask the device if it can capture frames
+    v4l2_capability capability;
+    if(ioctl(fd, VIDIOC_QUERYCAP, &capability) < 0){
+        // something went wrong... exit
+        perror("Failed to get device capabilities, VIDIOC_QUERYCAP");
+        return 1;
+    }
 
 
-	/* Cleanup the resources */
-	for (int i =0; i < NBUF; i++) {
-		munmap(buffer[i], size);
-	}
-	close(file);
-	close(fd);
+    // 3. Set Image format
+    v4l2_format imageFormat;
+    imageFormat.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    imageFormat.fmt.pix.width = 640;
+    imageFormat.fmt.pix.height = 480;
+    imageFormat.fmt.pix.pixelformat = V4L2_PIX_FMT_MJPEG;
+    imageFormat.fmt.pix.field = V4L2_FIELD_NONE;
+    // tell the device you are using this format
+    if(ioctl(fd, VIDIOC_S_FMT, &imageFormat) < 0){
+        perror("Device could not set format, VIDIOC_S_FMT");
+        return 1;
+    }
 
-	return 0;
+
+    // 4. Request Buffers from the device
+    v4l2_requestbuffers requestBuffer = {0};
+    requestBuffer.count = 1; // one request buffer
+    requestBuffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE; // request a buffer wich we an use for capturing frames
+    requestBuffer.memory = V4L2_MEMORY_MMAP;
+
+    if(ioctl(fd, VIDIOC_REQBUFS, &requestBuffer) < 0){
+        perror("Could not request buffer from device, VIDIOC_REQBUFS");
+        return 1;
+    }
+
+
+    // 5. Quety the buffer to get raw data ie. ask for the you requested buffer
+    // and allocate memory for it
+    v4l2_buffer queryBuffer = {0};
+    queryBuffer.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    queryBuffer.memory = V4L2_MEMORY_MMAP;
+    queryBuffer.index = 0;
+    if(ioctl(fd, VIDIOC_QUERYBUF, &queryBuffer) < 0){
+        perror("Device did not return the buffer information, VIDIOC_QUERYBUF");
+        return 1;
+    }
+    // use a pointer to point to the newly created buffer
+    // mmap() will map the memory address of the device to
+    // an address in memory
+    char* buffer = (char*)mmap(NULL, queryBuffer.length, PROT_READ | PROT_WRITE, MAP_SHARED,
+                        fd, queryBuffer.m.offset);
+    memset(buffer, 0, queryBuffer.length);
+
+
+    // 6. Get a frame
+    // Create a new buffer type so the device knows whichbuffer we are talking about
+    v4l2_buffer bufferinfo;
+    memset(&bufferinfo, 0, sizeof(bufferinfo));
+    bufferinfo.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    bufferinfo.memory = V4L2_MEMORY_MMAP;
+    bufferinfo.index = 0;
+
+    // Activate streaming
+    int type = bufferinfo.type;
+    if(ioctl(fd, VIDIOC_STREAMON, &type) < 0){
+        perror("Could not start streaming, VIDIOC_STREAMON");
+        return 1;
+    }
+
+/***************************** Begin looping here *********************/
+    // Queue the buffer
+    if(ioctl(fd, VIDIOC_QBUF, &bufferinfo) < 0){
+        perror("Could not queue buffer, VIDIOC_QBUF");
+        return 1;
+    }
+
+    // Dequeue the buffer
+    if(ioctl(fd, VIDIOC_DQBUF, &bufferinfo) < 0){
+        perror("Could not dequeue the buffer, VIDIOC_DQBUF");
+        return 1;
+    }
+    // Frames get written after dequeuing the buffer
+
+    cout << "Buffer has: " << (double)bufferinfo.bytesused / 1024
+            << " KBytes of data" << endl;
+
+    // Write the data out to file
+    ofstream outFile;
+    outFile.open("webcam_output.jpeg", ios::binary| ios::app);
+
+    int bufPos = 0, outFileMemBlockSize = 0;  // the position in the buffer and the amoun to copy from
+                                        // the buffer
+    int remainingBufferSize = bufferinfo.bytesused; // the remaining buffer size, is decremented by
+                                                    // memBlockSize amount on each loop so we do not overwrite the buffer
+    char* outFileMemBlock = NULL;  // a pointer to a new memory block
+    int itr = 0; // counts thenumber of iterations
+    while(remainingBufferSize > 0) {
+        bufPos += outFileMemBlockSize;  // increment the buffer pointer on each loop
+                                        // initialise bufPos before outFileMemBlockSize so we can start
+                                        // at the begining of the buffer
+
+        outFileMemBlockSize = 1024;    // set the output block size to a preferable size. 1024 :)
+        outFileMemBlock = new char[sizeof(char) * outFileMemBlockSize];
+
+        // copy 1024 bytes of data starting from buffer+bufPos
+        memcpy(outFileMemBlock, buffer+bufPos, outFileMemBlockSize);
+        outFile.write(outFileMemBlock,outFileMemBlockSize);
+
+        // calculate the amount of memory left to read
+        // if the memory block size is greater than the remaining
+        // amount of data we have to copy
+        if(outFileMemBlockSize > remainingBufferSize)
+            outFileMemBlockSize = remainingBufferSize;
+
+        // subtract the amount of data we have to copy
+        // from the remaining buffer size
+        remainingBufferSize -= outFileMemBlockSize;
+
+        // display the remaining buffer size
+        cout << itr++ << " Remaining bytes: "<< remainingBufferSize << endl;
+        
+        delete outFileMemBlock;
+    }
+
+    // Close the file
+    outFile.close();
+
+
+/******************************** end looping here **********************/
+
+    // end streaming
+    if(ioctl(fd, VIDIOC_STREAMOFF, &type) < 0){
+        perror("Could not end streaming, VIDIOC_STREAMOFF");
+        return 1;
+    }
+
+    close(fd);
+    return 0;
 }
