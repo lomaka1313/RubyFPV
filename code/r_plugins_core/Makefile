@@ -1,4 +1,3 @@
-LDFLAGS=-lrt -lpcap -lpthread
 CPPFLAGS=-Wall -O0 -D _GNU_SOURCE
 CFLAGS := $(CFLAGS) 
 RELEASE_DIR = ../../
@@ -14,7 +13,6 @@ core_plugins_utils.o: ../public/utils/core_plugins_utils.c
 
 plugin_core: core_plugins_utils.o plugin_core.o
 	gcc plugin_core.o core_plugins_utils.o -shared -Wl,-soname,plugin_core.so.1 -o plugin_core.so.1.0.1 -lc
-	cp -f plugin_core.so.1.0.1 $(RELEASE_DIR)
 	$(info Copy plugin_core)
 	$(info ----------------------------------------------------)
 

@@ -176,6 +176,7 @@ int capture_image(int fd)
         perror("Retrieving Frame");
         return 1;
     }
+
     printf ("saving image\n");
     return 0;
 }
@@ -201,6 +202,7 @@ int main()
             if(capture_image(fd))
                 return 1;
         }
+
         close(fd);
         return 0;
 }
