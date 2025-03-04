@@ -183,7 +183,6 @@ int capture_image(int fd)
     IplImage* frame;
     CvMat cvmat = cvMat(480, 640, CV_8UC3, (void*)buffer);
     frame = cvDecodeImage(&cvmat, 1);
-    cvWaitKey(0);
     cvSaveImage("image.jpg", frame, 0);
  
     return 0;
