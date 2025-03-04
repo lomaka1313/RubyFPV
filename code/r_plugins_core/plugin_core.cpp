@@ -24,9 +24,9 @@ void query_capabilites(int fd)
 		exit(EXIT_FAILURE);
 	}
 
-	// if (!(cap.capabilities & V4L2_CAP_READWRITE)) {
-	// 	fprintf(stderr, "Device does not support read i/o\\n");
-	// }
+	if (!(cap.capabilities & V4L2_CAP_READWRITE)) {
+		fprintf(stderr, "Device does not support read i/o\\n");
+	}
 
 	if (!(cap.capabilities & V4L2_CAP_STREAMING)) {
 		fprintf(stderr, "Devices does not support streaming i/o\\n");
@@ -38,9 +38,9 @@ int set_format(int fd)
 {
 	struct v4l2_format format = {0};
 	format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	format.fmt.pix.width = 480;
-	format.fmt.pix.height = 320;
-	format.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
+	format.fmt.pix.width = 640;
+	format.fmt.pix.height = 480;
+	format.fmt.pix.pixelformat = V4L2_PIX_FMT_MJPEG;
 	format.fmt.pix.field = V4L2_FIELD_NONE;
 
 	int res = ioctl(fd, VIDIOC_S_FMT, &format);
@@ -184,7 +184,7 @@ int main()
 	/* Step 7: Dequeue buffer */
 	index = dequeue_buffer(fd);
 
-	int file = open("output.raw", O_RDWR | O_CREAT, 0666);
+	int file = open("output.mjpg", O_RDWR | O_CREAT, 0666);
 	write(file, buffer[index], size);
 
 	/* Step 8: Stop streaming */
