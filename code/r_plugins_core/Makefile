@@ -3,7 +3,7 @@ CPPFLAGS=-Wall -O0 -D _GNU_SOURCE
 CFLAGS := $(CFLAGS) 
 RELEASE_DIR = ../../
 
-all: plugin_core`
+all: plugin_core
 
 core_plugins_utils.o: ../public/utils/core_plugins_utils.c
 	gcc -c -o $@ $< $(CPPFLAGS)
