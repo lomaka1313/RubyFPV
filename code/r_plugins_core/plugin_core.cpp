@@ -175,6 +175,7 @@ int main()
 	FD_SET(fd, &fds);
 	struct timeval tv = {0};
 	tv.tv_sec = 2;
+    tv.tv_usec = 0;
 	int r = select(fd+1, &fds, NULL, NULL, &tv);
 	if(-1 == r){
 		perror("Waiting for Frame");
@@ -194,6 +195,7 @@ int main()
 	/* Cleanup the resources */
 	for (int i =0; i < NBUF; i++) {
 		munmap(buffer[i], size);
+        printf("Buffer %i, size %i\n", i, size);
 	}
 	close(file);
 	close(fd);
