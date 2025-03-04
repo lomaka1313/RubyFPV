@@ -24,9 +24,9 @@ void query_capabilites(int fd)
 		exit(EXIT_FAILURE);
 	}
 
-	if (!(cap.capabilities & V4L2_CAP_READWRITE)) {
-		fprintf(stderr, "Device does not support read i/o\\n");
-	}
+	// if (!(cap.capabilities & V4L2_CAP_READWRITE)) {
+	// 	fprintf(stderr, "Device does not support read i/o\\n");
+	// }
 
 	if (!(cap.capabilities & V4L2_CAP_STREAMING)) {
 		fprintf(stderr, "Devices does not support streaming i/o\\n");
