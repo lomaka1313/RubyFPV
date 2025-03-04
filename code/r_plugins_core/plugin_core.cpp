@@ -8,7 +8,7 @@
 #include <sys/ioctl.h>
 #include <linux/videodev2.h>
 
-#define NBUF 3
+#define NBUF 10
 
 void query_capabilites(int fd)
 {
@@ -165,6 +165,7 @@ int main()
 
 		/* Step 5: Queue buffer */
 		queue_buffer(fd, i);
+        printf("Buffer %i, size %i\n", i, size);
 	}
 
 	/* Step 6: Start streaming */
@@ -195,7 +196,6 @@ int main()
 	/* Cleanup the resources */
 	for (int i =0; i < NBUF; i++) {
 		munmap(buffer[i], size);
-        printf("Buffer %i, size %i\n", i, size);
 	}
 	close(file);
 	close(fd);
