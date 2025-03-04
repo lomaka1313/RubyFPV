@@ -38,9 +38,9 @@ int set_format(int fd)
 {
 	struct v4l2_format format = {0};
 	format.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-	format.fmt.pix.width = 640;
-	format.fmt.pix.height = 480;
-	format.fmt.pix.pixelformat = V4L2_PIX_FMT_MJPEG;
+	format.fmt.pix.width = 480;
+	format.fmt.pix.height = 320;
+	format.fmt.pix.pixelformat = V4L2_PIX_FMT_YUYV;
 	format.fmt.pix.field = V4L2_FIELD_NONE;
 
 	int res = ioctl(fd, VIDIOC_S_FMT, &format);
